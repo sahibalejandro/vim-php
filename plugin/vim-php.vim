@@ -26,9 +26,9 @@ endfunction
 function! SearchTags(pattern)
     let l:tags = []
 
-    " Search tags and filer by "c" kind.
+    " Search tags and filter by type: class and trait
     for l:tag in taglist(a:pattern)
-        if l:tag.kind == 'c'
+        if l:tag.kind == 'c' || l:tag.kind == 't'
             let l:tag.namespace = NormalizeNamespace(l:tag)
             call add(l:tags, l:tag)
         endif
