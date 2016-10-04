@@ -1,74 +1,103 @@
-function! PhpNamespace()
+" List of tags found
+let s:tags = []
 
+" Determine if the options window is open
+let s:windowIsOpen = 0
+
+" Action to do when a class is selected by the user, it can be:
+" use = Insert the use statement
+" expand_fqcn = Expand the FQCN
+" expand_fqcn = Expand the FQCN with a leading backslash
+let s:action = 'use'
+
+" Define commands for PHP user
+command! PHPImportClass call s:PHPImportClass('use')
+command! PHPExpandFQCN call s:PHPImportClass('expand_fqcn')
+command! PHPExpandFQCNAbsolute call s:PHPImportClass('expand_fqcn_absolute')
+
+"
+" Start the import process
+"
+function! s:PHPImportClass(action)
+    let s:action = a:action
     let l:class = expand('<cword>')
-    let s:tags = SearchTags('^'.l:class.'$')
+    let s:tags = s:SearchTags(l:class)
 
-    " If no tags found then we can't do nothing.
     if empty(s:tags)
-        call Message('No matches for "'.l:class.'" :(')
-        return 0
-    endif
-
-    " Choose the tag we will use and make the FQCN string
-    call ChooseTag(s:tags)
-endfunction
-
-"
-" Choose the tag or open a window to let the user choose one.
-"
-function! ChooseTag(tags)
-    " If there is only one tag then just use it
-    if len(a:tags) == 1
-        call SelectTag(0)
+        call s:Message('Class or Trait "'.l:class.'" not found.')
         return
     endif
 
-    " Make the options and open a window to display them.
-    let l:options = MakeOptionsList(a:tags)
-    execute 'bo '.len(l:options).'new'
+    if len(s:tags) == 1
+        call s:SelectOption(0)
+    else
+        call s:DisplayOptions()
+    endif
+endfunction
 
-    " Write each option in a line an then move curstor to the top.
+"
+" Open a window to display a list of FQCN of the found tags to let the user
+" select an option or cancel.
+"
+function! s:DisplayOptions()
+
+    " Make the options list.
+    let l:options = s:MakeOptionsList()
+
+    " Open a new window to display the options list.
+    execute 'bo '.len(l:options).'new'
+    let s:windowIsOpen = 1
+
+    " Write each option in a line an then move cursor to the top.
     call append(0, l:options)
     normal! ddgg0
 
     " Avoid the user modify the buffer contents.
     setlocal cursorline
     setlocal nomodifiable
-    setlocal statusline=j/k\ =\ Up/down,\ <Enter>\ =\ Select,\ <Esc>\ =\ Cancel
+    setlocal statusline=Select\ a\ Class\ or\ Trait
+
+    " This buffer command will be called when user select an option.
+    command! -buffer PHPSelectOption call s:SelectOption(line('.') - 1)
 
     " Map common keys to select or close the options window.
     nnoremap <buffer> <esc> :q!<cr>:echo "Canceled"<cr>
-    nnoremap <buffer> <cr> :call SelectTag(line('.') - 1)<cr>
+    nnoremap <buffer> <cr> :PHPSelectOption<cr>
 endfunction
 
 "
-" Select the tag and insert the use statement.
+" Select and option from the found tags and apply the requested action
+" (s:action)
 "
-function! SelectTag(index)
+function! s:SelectOption(index)
     let l:tag = s:tags[a:index]
     let l:fqcn = l:tag.namespace.'\'.l:tag.name
 
-    if a:index > 0
+    " Close the window if it's open
+    if s:windowIsOpen
         execute "normal! :q!\<cr>"
+        let s:windowIsOpen = 0
     endif
 
-    if FqcnExists(l:fqcn) == 0
-        call InsertUseStatement(l:fqcn)
+    if s:FqcnExists(l:fqcn)
+        call s:Message('"'.l:fqcn.'" already in use.')
+    else
+        call s:InsertUseStatement(l:fqcn)
+        call s:Message('"'.l:fqcn.'" imported.')
     endif
 
-    call Message('Class "'.l:fqcn.'" added.')
  endfunction
 
 "
-" Get a List of tags that matches de given pattern and are "class" kind.
+" Search for classes or traits using the given pattern
 "
-function! SearchTags(pattern)
+function! s:SearchTags(class)
     let l:tags = []
 
     " Search tags and filter by type: class and trait
-    for l:tag in taglist(a:pattern)
+    for l:tag in taglist('^'.a:class.'$')
         if l:tag.kind == 'c' || l:tag.kind == 't'
-            let l:tag.namespace = NormalizeNamespace(l:tag)
+            let l:tag.namespace = s:NormalizeNamespace(l:tag)
             call add(l:tags, l:tag)
         endif
     endfor
@@ -79,11 +108,12 @@ endfunction
 "
 " Takes a List of tags and return a List of options to pass in inputlist()
 "
-function! MakeOptionsList(tags)
+function! s:MakeOptionsList()
     let l:options = []
 
-    for l:tag in a:tags
-        call add(l:options, ' '.l:tag.namespace.'\'.l:tag.name)
+    for l:tag in s:tags
+        let l:type = (l:tag.kind == 'c') ? 'Class' : 'Trait'
+        call add(l:options, ' '.l:tag.namespace.'\'.l:tag.name.' ('.l:type.')')
     endfor
 
     return l:options
@@ -92,7 +122,7 @@ endfunction
 "
 " Remove the double backslashes from a namespace.
 "
-function! NormalizeNamespace(tag)
+function! s:NormalizeNamespace(tag)
     let l:ns = a:tag.namespace
 
     if stridx(l:ns, '\\') > -1
@@ -105,19 +135,19 @@ endfunction
 "
 " Checks if the given fqcn is already in use.
 "
-function! FqcnExists(fqcn)
+function! s:FqcnExists(fqcn)
     " Escape the backslash, this is needed because we expect a normalized
     " fqcn which it don't have escaped backslashes.
     let l:escaped = substitute(a:fqcn, '\\', '\\\\', 'g')
 
     " Search for the use statement, for example: use App\\Class;
-    return SearchInBuffer('^use '.l:escaped.';')
+    return s:SearchInBuffer('^use '.l:escaped.';')
 endfunction
 
 "
 " Returns true if the given pattern exists in the current buffer
 "
-function! SearchInBuffer(pattern)
+function! s:SearchInBuffer(pattern)
     normal! mx
     let l:lineNumber = search(a:pattern)
     normal! `x
@@ -127,7 +157,7 @@ endfunction
 "
 " Insert the "use" statement with the given namespace
 "
-function! InsertUseStatement(fqcn)
+function! s:InsertUseStatement(fqcn)
 
     let l:use = 'use ' . a:fqcn . ';'
 
@@ -160,7 +190,7 @@ endfunction
 "
 " Display a nice message
 "
-function! Message(message)
+function! s:Message(message)
     redraw
     echo a:message
 endfunction
