@@ -1,24 +1,63 @@
 function! PhpNamespace()
 
     let l:class = expand('<cword>')
-    let l:tags = SearchTags('^'.l:class.'$')
+    let s:tags = SearchTags('^'.l:class.'$')
 
     " If no tags found then we can't do nothing.
-    if empty(l:tags)
+    if empty(s:tags)
         call Message('No matches for "'.l:class.'" :(')
         return 0
     endif
 
     " Choose the tag we will use and make the FQCN string
-    let l:tag = ChooseTag(l:tags)
+    call ChooseTag(s:tags)
+endfunction
+
+"
+" Choose the tag or open a window to let the user choose one.
+"
+function! ChooseTag(tags)
+    " If there is only one tag then just use it
+    if len(a:tags) == 1
+        call SelectTag(0)
+        return
+    endif
+
+    " Make the options and open a window to display them.
+    let l:options = MakeOptionsList(a:tags)
+    execute 'bo '.len(l:options).'new'
+
+    " Write each option in a line an then move curstor to the top.
+    call append(0, l:options)
+    normal! ddgg0
+
+    " Avoid the user modify the buffer contents.
+    setlocal cursorline
+    setlocal nomodifiable
+    setlocal statusline=j/k\ =\ Up/down,\ <Enter>\ =\ Select,\ <Esc>\ =\ Cancel
+
+    " Map common keys to select or close the options window.
+    nnoremap <buffer> <esc> :q!<cr>:echo "Canceled"<cr>
+    nnoremap <buffer> <cr> :call SelectTag(line('.') - 1)<cr>
+endfunction
+
+"
+" Select the tag and insert the use statement.
+"
+function! SelectTag(index)
+    let l:tag = s:tags[a:index]
     let l:fqcn = l:tag.namespace.'\'.l:tag.name
+
+    if a:index > 0
+        execute "normal! :q!\<cr>"
+    endif
 
     if FqcnExists(l:fqcn) == 0
         call InsertUseStatement(l:fqcn)
     endif
 
     call Message('Class "'.l:fqcn.'" added.')
-endfunction
+ endfunction
 
 "
 " Get a List of tags that matches de given pattern and are "class" kind.
@@ -38,31 +77,13 @@ function! SearchTags(pattern)
 endfunction
 
 "
-" Get the specified tag to use from a List of tags.
-"
-function! ChooseTag(tags)
-
-    " If there is only one tag then just return it
-    if len(a:tags) == 1
-        return a:tags[0]
-    endif
-
-    " Display an input list witha all available tags to let the user select one.
-    let l:index = inputlist(MakeOptionsList(a:tags)) - 1
-
-    return a:tags[l:index]
-endfunction
-
-"
 " Takes a List of tags and return a List of options to pass in inputlist()
 "
 function! MakeOptionsList(tags)
     let l:options = []
-    let l:number = 1
 
     for l:tag in a:tags
-        call add(l:options, l:number.' => '.l:tag.namespace.'\'.l:tag.name)
-        let l:number = l:number + 1
+        call add(l:options, ' '.l:tag.namespace.'\'.l:tag.name)
     endfor
 
     return l:options
