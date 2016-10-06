@@ -24,7 +24,7 @@ function! s:PHPImportClass(action)
     let s:tags = s:SearchTags(l:class)
 
     if empty(s:tags)
-        call s:Message('Class or Trait "'.l:class.'" not found.')
+        call s:Message('Class, trait or interface "'.l:class.'" not found.')
         return
     endif
 
@@ -94,9 +94,9 @@ function! s:SelectOption(index)
 function! s:SearchTags(class)
     let l:tags = []
 
-    " Search tags and filter by type: class and trait
+    " Search tags and filter by type: class, trait or interface
     for l:tag in taglist('^'.a:class.'$')
-        if l:tag.kind == 'c' || l:tag.kind == 't'
+        if l:tag.kind == 'c' || l:tag.kind == 't' || l:tag.kind == 'i'
             let l:tag.namespace = s:NormalizeNamespace(l:tag)
             call add(l:tags, l:tag)
         endif
