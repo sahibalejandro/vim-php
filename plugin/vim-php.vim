@@ -55,7 +55,7 @@ function! s:DisplayOptions()
     " Avoid the user modify the buffer contents.
     setlocal cursorline
     setlocal nomodifiable
-    setlocal statusline=Select\ a\ Class\ or\ Trait
+    setlocal statusline=Select\ a\ Class,\ trait\ or\ interface
 
     " This buffer command will be called when user select an option.
     command! -buffer PHPSelectOption call s:SelectOption(line('.') - 1)
@@ -117,10 +117,15 @@ endfunction
 "
 function! s:MakeOptionsList()
     let l:options = []
+    let l:kinds = {'c': 'Class', 't': 'Trait', 'i': 'Interface'}
 
     for l:tag in s:tags
-        let l:type = (l:tag.kind == 'c') ? 'Class' : 'Trait'
-        call add(l:options, ' '.l:tag.namespace.'\'.l:tag.name.' ('.l:type.')')
+        let l:kind = l:kinds[l:tag.kind]
+
+        " Add tail backslash only if the namespace is not empty.
+        let l:namespace = l:tag.namespace == '' ? '' : l:tag.namespace.'\'
+
+        call add(l:options, ' '.l:namespace.l:tag.name.' '.l:kind.' '.l:tag.filename)
     endfor
 
     return l:options
