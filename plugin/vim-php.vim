@@ -96,6 +96,13 @@ function! s:SearchTags(class)
 
     " Search tags and filter by type: class, trait or interface
     for l:tag in taglist('^'.a:class.'$')
+
+        " Not all tags have a namespace, those will be considered as root
+        " classes.
+        if has_key(l:tag, 'namespace') == 0
+            let l:tag.namespace = ''
+        endif
+
         if l:tag.kind == 'c' || l:tag.kind == 't' || l:tag.kind == 'i'
             let l:tag.namespace = s:NormalizeNamespace(l:tag)
             call add(l:tags, l:tag)
