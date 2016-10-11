@@ -5,10 +5,13 @@ let s:tags = []
 let s:windowIsOpen = 0
 
 " Action to do when a class is selected by the user, it can be:
-" use = Insert the use statement
-" expand_fqcn = Expand the FQCN
-" expand_fqcn = Expand the FQCN with a leading backslash
+" use                  : Insert the use statement
+" expand_fqcn          : Expand the FQCN
+" expand_fqcn_absolute : Expand the FQCN with a leading backslash
 let s:action = 'use'
+
+" Tag kinds, to use on s:GetTagKind(...)
+let s:kinds = {'c': 'Class', 't': 'Trait', 'i': 'Interface'}
 
 " Define commands for PHP user
 command! PHPImportClass call s:PHPImportClass('use')
@@ -71,6 +74,7 @@ endfunction
 "
 function! s:SelectOption(index)
     let l:tag = s:tags[a:index]
+    let l:kind = s:GetTagKind(l:tag)
     let l:fqcn = l:tag.namespace.'\'.l:tag.name
 
     " Close the window if it's open
@@ -79,12 +83,28 @@ function! s:SelectOption(index)
         let s:windowIsOpen = 0
     endif
 
-    if s:FqcnExists(l:fqcn)
-        call s:Message('"'.l:fqcn.'" already in use.')
-    else
-        call s:InsertUseStatement(l:fqcn)
-        call s:Message('"'.l:fqcn.'" imported.')
+    if s:action == 'use'
+        if s:FqcnExists(l:fqcn)
+            call s:Message(l:kind.' "'.l:fqcn.'" already in use.')
+        else
+            call s:InsertUseStatement(l:fqcn)
+            call s:Message(l:kind.' "'.l:fqcn.'" imported.')
+        endif
+    elseif s:action == 'expand_fqcn' || s:action == 'expand_fqcn_absolute'
+        let l:namespace = l:tag.namespace
+
+        " Prepend the backslash if needed
+        if s:action == 'expand_fqcn_absolute'
+            let l:namespace = '\'.l:namespace
+        endif
+
+        " Insert the namespace before de current word using a register.
+        let @x = l:namespace.'\'
+        execute "normal! viw\<esc>b\"xPe"
+
+        call s:Message(l:kind.' "'.l:fqcn.'" expanded.')
     endif
+
 
  endfunction
 
@@ -95,7 +115,7 @@ function! s:SearchTags(class)
     let l:tags = []
 
     " Search tags and filter by type: class, trait or interface
-    for l:tag in taglist('^'.a:class.'$')
+    for l:tag in taglist('\C^'.a:class.'$')
 
         " Not all tags have a namespace, those will be considered as root
         " classes.
@@ -117,15 +137,11 @@ endfunction
 "
 function! s:MakeOptionsList()
     let l:options = []
-    let l:kinds = {'c': 'Class', 't': 'Trait', 'i': 'Interface'}
 
     for l:tag in s:tags
-        let l:kind = l:kinds[l:tag.kind]
-
         " Add tail backslash only if the namespace is not empty.
         let l:namespace = l:tag.namespace == '' ? '' : l:tag.namespace.'\'
-
-        call add(l:options, ' '.l:namespace.l:tag.name.' '.l:kind.' '.l:tag.filename)
+        call add(l:options, ' '.l:namespace.l:tag.name.' '.s:GetTagKind(l:tag).' '.l:tag.filename)
     endfor
 
     return l:options
@@ -205,4 +221,11 @@ endfunction
 function! s:Message(message)
     redraw
     echo a:message
+endfunction
+
+"
+" Returns the tag kind
+"
+function! s:GetTagKind(tag) 
+    return s:kinds[a:tag.kind]
 endfunction
