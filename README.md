@@ -1,5 +1,8 @@
 # vim-php
-Plugin to help PHP developers, inspired on Sublime Text's plugin PHP Companion
+Plugin to help PHP developers, inspired on Sublime Text's plugin PHP Companion.
+
+When two or more classes are found, it won't display that ugly tags list like `:ts`, instead it will display
+a nice and clean options list, just give it a try!
 
 ## Install
 Install using your favorite plugin manager.
@@ -9,7 +12,7 @@ You need *Universal Ctags* to generate CTags for classes, traits and interfaces.
 Here you can find it: https://github.com/universal-ctags/ctags
 
 Once you have installed *Universal Ctags* just run this command:
-```bash
+```
 ctags --recurse --languages=php --php-kinds=ctif
 ```
 
@@ -31,7 +34,7 @@ cursor.
 ## Configuration
 
 Just add this to your `.vimrc` file:
-```vimscript
+```vim
 augroup VIM_PHP
     autocmd!
     autocmd FileType php nnoremap <Leader>u :PHPImportClass<cr>
