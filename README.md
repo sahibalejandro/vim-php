@@ -4,6 +4,8 @@ Plugin to help PHP developers, inspired on Sublime Text's plugin PHP Companion.
 When two or more classes are found, it won't display that ugly tags list like `:ts`, instead it will display
 a nice and clean options list, just give it a try!
 
+![Preview](https://sahib.io/vim-php-namespace.gif)
+
 ## Install
 Install using your favorite plugin manager.
 
