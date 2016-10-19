@@ -1,7 +1,7 @@
 # vim-php
 An **intuitive** plugin to import/expand classes, traits and interfaces, finally!
 
-![Preview](https://sahib.io/vim-php-namespace.gif)
+![Preview](https://sahib.io/vim-php-namespace-sm.gif)
 
 ## Install
 Install using your favorite plugin manager, like Vundle:
