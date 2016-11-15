@@ -60,6 +60,11 @@ function! s:DisplayOptions()
     setlocal nomodifiable
     setlocal statusline=Select\ a\ Class,\ trait\ or\ interface
 
+    " Syntax highlighting
+    " I'm not sure if this is a good place to write syntax highlight :/
+    syn keyword elementType Class Trait Inter
+    hi def link elementType Keyword
+
     " This buffer command will be called when user select an option.
     command! -buffer PHPSelectOption call s:SelectOption(line('.') - 1)
 
@@ -141,7 +146,7 @@ function! s:MakeOptionsList()
     for l:tag in s:tags
         " Add tail backslash only if the namespace is not empty.
         let l:namespace = l:tag.namespace == '' ? '' : l:tag.namespace.'\'
-        call add(l:options, ' '.l:namespace.l:tag.name.' '.s:GetTagKind(l:tag).' '.l:tag.filename)
+        call add(l:options, ' '.strpart(s:GetTagKind(l:tag), 0, 5).' '.l:namespace.l:tag.name)
     endfor
 
     return l:options
