@@ -13,6 +13,8 @@ let s:action = 'use'
 " Tag kinds, to use on s:GetTagKind(...)
 let s:kinds = {'c': 'Class', 't': 'Trait', 'i': 'Interface'}
 
+let s:previous_win_nr = 0
+
 " Define commands for PHP user
 command! PHPImportClass call s:PHPImportClass('use')
 command! PHPExpandFQCN call s:PHPImportClass('expand_fqcn')
@@ -22,6 +24,7 @@ command! PHPExpandFQCNAbsolute call s:PHPImportClass('expand_fqcn_absolute')
 " Start the import process
 "
 function! s:PHPImportClass(action)
+    let s:previous_win_nr = winnr()
     let s:action = a:action
     let l:class = expand('<cword>')
     let s:tags = s:SearchTags(l:class)
@@ -87,6 +90,8 @@ function! s:SelectOption(index)
         execute "normal! :q!\<cr>"
         let s:windowIsOpen = 0
     endif
+
+    execute ":".s:previous_win_nr."wincmd w"
 
     if s:action == 'use'
         if s:FqcnExists(l:fqcn)
