@@ -1,6 +1,8 @@
 # vim-php
 An **intuitive** plugin to import/expand classes, traits and interfaces, finally!
 
+**This repository still active, feel free to open issues or send pull request**
+
 ![Preview](https://sahib.io/vim-php-namespace-sm.gif)
 
 ## Install
