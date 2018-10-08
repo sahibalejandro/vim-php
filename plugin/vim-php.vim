@@ -15,6 +15,12 @@ let s:kinds = {'c': 'Class', 't': 'Trait', 'i': 'Interface'}
 
 let s:previous_win_nr = 0
 
+" Default value for use sort variable, values could be:
+" length = Sort by length
+" alpha  = Sort alphabetically
+" Any other value means no sort.
+let g:vim_php_use_sort = get(g:, 'vim_php_use_sort', 'length')
+
 " Define commands for PHP user
 command! PHPImportClass call s:PHPImportClass('use')
 command! PHPExpandFQCN call s:PHPImportClass('expand_fqcn')
@@ -193,6 +199,28 @@ function! s:SearchInBuffer(pattern)
 endfunction
 
 "
+" Sort the "use" statements.
+"
+function! s:SortUseStatements(lastLine)
+    normal! gg
+    let l:firstLine = search('^use .*;$', 'n')
+
+    if l:firstLine == a:lastLine
+        return
+    endif
+
+    if g:vim_php_use_sort == 'alpha'
+        execute l:firstLine . ',' . a:lastLine . 'sort'
+    elseif g:vim_php_use_sort == 'length'
+        " Prepend the length number to each use statment, then sort the lines by
+        " number and the final step is remove the length number.
+        execute l:firstLine . ',' . a:lastLine . 's/^use .*;$/\=strdisplaywidth( submatch(0) ).":".submatch(0)/'
+        execute l:firstLine . ',' . a:lastLine . 'sort n'
+        execute l:firstLine . ',' . a:lastLine . 's/^\d\+://'
+    endif
+endfunction
+
+"
 " Insert the "use" statement with the given namespace
 "
 function! s:InsertUseStatement(fqcn)
@@ -204,6 +232,7 @@ function! s:InsertUseStatement(fqcn)
     " Try to insert after the last "use" statement.
     if search('^use .*;$', 'be') > 0
         call append(line('.'), l:use)
+        call s:SortUseStatements(line('.') + 1)
 
     " Try to insert after the "namespace" statement, leaving one blank line
     " before the "use" statement.
