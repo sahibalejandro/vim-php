@@ -46,4 +46,18 @@ augroup VIM_PHP
     autocmd FileType php nnoremap <Leader>E :PHPExpandFQCN<cr>
 augroup END
 ```
+
 Change the mappings to your needs.
+
+### Ordering use statements
+By default when you import a class, all of the `use` statements will be sorted
+by length, if you want to sort them alphabetically set `g:vim_php_use_sort` to
+`alpha` in your `.vimrc` file:
+
+```vim
+let g:vim_php_use_sort='alpha'
+```
+
+Note that `g:vim_php_use_sort='length'` is the default. If you use any other
+value rather than `length` or `alpha` then the new `use` statements will be
+added after the last one, which means: *no sorting*.
