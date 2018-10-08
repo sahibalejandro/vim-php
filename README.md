@@ -3,7 +3,7 @@ An **intuitive** plugin to import/expand classes, traits and interfaces, finally
 
 ## 2018-10-07: This repository still active, feel free to open issues or send pull request
 
-![Preview](https://sahib.io/vim-php-namespace-sm.gif)
+![Preview](https://sahibalejandro.com/vim-php-namespace-sm.gif)
 
 ## Install
 Install using your favorite plugin manager, like Vundle:
